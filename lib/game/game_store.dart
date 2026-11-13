@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'game_state.dart';
 
 abstract class GameStore {
+  /// Null when there is no save, or the save is from an older version.
   Future<GameState?> load();
   Future<void> save(GameState state);
 }
@@ -36,6 +37,5 @@ class MemoryGameStore implements GameStore {
       : GameState.fromJson(jsonDecode(_raw!) as Map<String, dynamic>);
 
   @override
-  Future<void> save(GameState state) async =>
-      _raw = jsonEncode(state.toJson());
+  Future<void> save(GameState state) async => _raw = jsonEncode(state.toJson());
 }

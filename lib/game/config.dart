@@ -1,53 +1,31 @@
 /// All balance numbers live here so they can be tuned in one place.
-/// Values marked "tunable" are not fixed by the design doc.
 class Tuning {
-  static const int goalSteps = 1000000;
+  /// Average stride. Turns steps into race distance before gear bonuses.
+  static const double metersPerStep = 0.75;
 
-  /// Max steps that count toward the game per calendar day.
+  /// Max steps that count per calendar day. Guards against bad sensor data.
   static const int dailyStepCap = 50000;
 
-  /// Generators keep earning while the app is closed, up to this long.
-  static const Duration offlineCap = Duration(hours: 8);
+  /// A new player can afford one budget item right away.
+  static const int startingCoins = 400;
 
-  static const double shoeBaseCost = 100;
-  static const double shoeCostGrowth = 1.6;
-  static const double generatorCostGrowth = 1.15;
+  /// Finish reward per kilometre of race distance, before the medal factor.
+  static const int coinsPerKm = 20;
 
-  /// Coin bonus "every other 25,000 steps": at 25k, 75k, 125k, ...
-  static const int milestoneBonusFirst = 25000;
-  static const int milestoneBonusEvery = 50000;
+  /// Training walks pay this per kilometre on completion (no medals).
+  static const int trainingCoinsPerKm = 15;
 
-  /// Bonus size, expressed as this many steps' worth of coins. (tunable)
-  static const int milestoneBonusSteps = 2500;
+  /// Medal pace targets, in base steps per day (gear lowers the steps needed).
+  /// Finishing within ceil(baseSteps / goldStepsPerDay) days earns gold, and so
+  /// on. Bronze is any finish before the race closes.
+  static const int goldStepsPerDay = 15000;
+  static const int silverStepsPerDay = 10000;
+
+  /// Share of the full coin reward each medal pays.
+  static const double goldCoinFactor = 1.0;
+  static const double silverCoinFactor = 0.75;
+  static const double bronzeCoinFactor = 0.5;
+
+  /// A Monday. Week 0 of the race schedule starts here (local time).
+  static const int epochYear = 2024, epochMonth = 1, epochDay = 1;
 }
-
-class GeneratorDef {
-  const GeneratorDef({
-    required this.id,
-    required this.name,
-    required this.unlockAt,
-    required this.baseCost,
-    required this.perMinute,
-  });
-
-  final String id;
-  final String name;
-
-  /// Lifetime steps needed before this generator can be bought.
-  final int unlockAt;
-
-  /// Cost of the first one (tunable).
-  final double baseCost;
-
-  /// Coins per minute earned by each one owned (tunable).
-  final double perMinute;
-}
-
-const List<GeneratorDef> generatorDefs = [
-  GeneratorDef(id: 'paperboy', name: 'Paperboy', unlockAt: 0, baseCost: 50, perMinute: 1),
-  GeneratorDef(id: 'dog_walker', name: 'Dog walker', unlockAt: 10000, baseCost: 1000, perMinute: 12),
-  GeneratorDef(id: 'courier', name: 'Courier', unlockAt: 50000, baseCost: 15000, perMinute: 90),
-  GeneratorDef(id: 'bike_shop', name: 'Bike shop', unlockAt: 150000, baseCost: 120000, perMinute: 500),
-  GeneratorDef(id: 'shoe_factory', name: 'Shoe factory', unlockAt: 400000, baseCost: 1000000, perMinute: 3000),
-  GeneratorDef(id: 'marathon_sponsor', name: 'Marathon sponsor', unlockAt: 700000, baseCost: 8000000, perMinute: 15000),
-];

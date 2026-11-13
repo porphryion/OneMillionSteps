@@ -7,17 +7,26 @@ abstract class StepSource {
   Future<Map<String, int>> dailyTotalsSince(DateTime since);
 }
 
-/// Development stand-in until Health Connect is wired up.
-/// Steps are added by hand from a debug button and kept in memory only.
+/// Development stand-in until Health Connect / Apple Health are wired up.
+/// Steps are added by hand from a debug button.
 class FakeStepSource implements StepSource {
-  FakeStepSource({DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
+  FakeStepSource({
+    DateTime Function()? clock,
+    Map<String, int>? initial,
+    this.onChanged,
+  }) : _clock = clock ?? DateTime.now,
+       _totals = {...?initial};
 
   final DateTime Function() _clock;
-  final Map<String, int> _totals = {};
+  final Map<String, int> _totals;
+
+  /// Called with all totals after every change, so they can be persisted.
+  final void Function(Map<String, int> totals)? onChanged;
 
   void addSteps(int steps, {DateTime? at}) {
     final key = dayKey(at ?? _clock());
     _totals[key] = (_totals[key] ?? 0) + steps;
+    onChanged?.call(Map.of(_totals));
   }
 
   @override

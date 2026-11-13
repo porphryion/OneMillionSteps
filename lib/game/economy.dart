@@ -1,47 +1,60 @@
-import 'dart:math';
-
 import 'config.dart';
+import 'models.dart';
 
-/// Pure formulas from the design doc. No state, no clocks.
+/// Pure formulas. No state, no clocks.
 
-double shoeCost(int level) =>
-    Tuning.shoeBaseCost * pow(Tuning.shoeCostGrowth, level);
+/// Total bonus percentage the given gear gives on [course].
+int bonusPct(Iterable<GearDef> gear, Course course) =>
+    gear.fold(0, (sum, g) => sum + g.bonusFor(course));
 
-double generatorCost(GeneratorDef def, int owned) =>
-    def.baseCost * pow(Tuning.generatorCostGrowth, owned);
+/// Race distance one step covers with [bonus] percent.
+double metersPerStep(int bonus) => Tuning.metersPerStep * (1 + bonus / 100);
 
-/// 1 coin per step, plus 1 per shoe level, times all bonuses.
-double coinsPerStep(int shoeLevel, {double multiplier = 1}) =>
-    (1 + shoeLevel) * multiplier;
+/// Steps needed to cover [meters] with [bonus] percent.
+int stepsFor(double meters, int bonus) =>
+    meters <= 0 ? 0 : (meters / metersPerStep(bonus)).ceil();
 
-double incomePerMinute(List<int> owned, {double multiplier = 1}) {
-  var total = 0.0;
-  for (var i = 0; i < generatorDefs.length; i++) {
-    total += generatorDefs[i].perMinute * owned[i];
-  }
-  return total * multiplier;
+/// Steps a course takes without any gear bonus.
+int baseSteps(Course c) => stepsFor(c.meters, 0);
+
+/// Finish within this many calendar days (join day = day 1) for gold.
+int goldDays(Course c) => (baseSteps(c) / Tuning.goldStepsPerDay).ceil();
+
+/// Finish within this many calendar days for silver.
+int silverDays(Course c) => (baseSteps(c) / Tuning.silverStepsPerDay).ceil();
+
+Medal medalFor(Course c, int daysUsed) {
+  if (daysUsed <= goldDays(c)) return Medal.gold;
+  if (daysUsed <= silverDays(c)) return Medal.silver;
+  return Medal.bronze;
 }
 
-/// Time to pay out for, between [from] and [to], never negative, at most [cap].
-Duration cappedElapsed(DateTime from, DateTime to, Duration cap) {
-  final d = to.difference(from);
-  if (d.isNegative) return Duration.zero;
-  return d > cap ? cap : d;
-}
+int rewardCoins(Course c, Medal m) =>
+    (c.km * Tuning.coinsPerKm * m.coinFactor).round();
 
-/// How many milestone coin bonuses [lifetimeSteps] has reached in total.
-int milestoneBonusesReached(int lifetimeSteps) {
-  if (lifetimeSteps < Tuning.milestoneBonusFirst) return 0;
-  return (lifetimeSteps - Tuning.milestoneBonusFirst) ~/
-          Tuning.milestoneBonusEvery +
-      1;
-}
+int trainingReward(Course c) => (c.km * Tuning.trainingCoinsPerKm).round();
 
 /// Steps from a day's total that count, after the daily cap.
-int countableDailySteps(int dayTotal) =>
-    dayTotal.clamp(0, Tuning.dailyStepCap);
+int countableDailySteps(int dayTotal) => dayTotal.clamp(0, Tuning.dailyStepCap);
 
+/// "yyyy-mm-dd" for local time [t]. Sorts chronologically as a string.
 String dayKey(DateTime t) =>
     '${t.year.toString().padLeft(4, '0')}-'
     '${t.month.toString().padLeft(2, '0')}-'
     '${t.day.toString().padLeft(2, '0')}';
+
+/// Whole calendar days from day [from] to day [to] (both "yyyy-mm-dd").
+int daysBetween(String from, String to) {
+  DateTime parse(String k) {
+    final p = k.split('-').map(int.parse).toList();
+    return DateTime.utc(p[0], p[1], p[2]);
+  }
+
+  return parse(to).difference(parse(from)).inDays;
+}
+
+/// Calendar days left to run, counting today, before [closesAt] (midnight).
+int daysLeft(DateTime now, DateTime closesAt) {
+  if (!now.isBefore(closesAt)) return 0;
+  return daysBetween(dayKey(now), dayKey(closesAt));
+}
