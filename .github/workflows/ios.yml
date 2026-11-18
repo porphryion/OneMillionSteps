@@ -1,0 +1,31 @@
+name: iOS
+
+# Builds the iOS app on a GitHub-hosted Mac. Start it from the Actions tab
+# or with `gh workflow run ios.yml`.
+#
+# For now the build is unsigned: it only checks that the app compiles for
+# iOS. Signing and the TestFlight upload come once the Apple Developer
+# account is approved.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Unsigned build
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.50.0
+          channel: stable
+          cache: true
+
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter test
+
+      - name: Build for iOS (no code signing)
+        run: flutter build ios --release --no-codesign --dart-define=TEST_TOOLS=true
