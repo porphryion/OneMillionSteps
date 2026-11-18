@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'build_flags.dart';
 import 'game/clock.dart';
 import 'game/game_controller.dart';
 import 'game/game_store.dart';
@@ -18,9 +18,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
 
-  // Debug builds can jump ahead by days to test multi-day races.
+  // Test builds can jump ahead by days to test multi-day races.
   final clock = DebugClock(
-    dayOffset: kDebugMode ? prefs.getInt(_debugDayKey) ?? 0 : 0,
+    dayOffset: kTestTools ? prefs.getInt(_debugDayKey) ?? 0 : 0,
     onChanged: (days) => prefs.setInt(_debugDayKey, days),
   );
 

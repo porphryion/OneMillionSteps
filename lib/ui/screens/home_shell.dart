@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../build_flags.dart';
 import '../../game/clock.dart';
 import '../../game/game_controller.dart';
 import '../../steps/step_source.dart';
@@ -84,9 +84,9 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final steps = widget.fakeSteps;
     return Scaffold(
-      // Debug buttons live on this outer Scaffold so its snackbars float
+      // Test buttons live on this outer Scaffold so its snackbars float
       // above them instead of covering them.
-      floatingActionButton: _tab == 0 && steps != null && kDebugMode
+      floatingActionButton: _tab == 0 && steps != null && kTestTools
           ? DebugTools(
               game: game,
               steps: steps,

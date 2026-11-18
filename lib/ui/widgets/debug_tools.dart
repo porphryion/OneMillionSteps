@@ -7,8 +7,8 @@ import '../../steps/step_source.dart';
 import '../format.dart';
 import '../theme/tokens.dart';
 
-/// Debug-only buttons: add steps, and jump to the next day (to get past the
-/// daily cap or to test multi-day races).
+/// Test buttons: add steps, and jump to the next day (to get past the
+/// daily cap or to test multi-day races). Shown when `kTestTools` is on.
 class DebugTools extends StatelessWidget {
   const DebugTools({
     super.key,

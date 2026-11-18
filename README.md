@@ -35,6 +35,14 @@ flutter test
 
 In debug builds, the race tab has two buttons: **+5.000 adım (debug)** simulates walking and **Ertesi gün (debug)** moves the game clock one day ahead. Use the second one to get past the 50,000-steps-a-day cap or to test multi-day races (medal tiers, the weekly close). Debug steps and the day offset are saved, so a race can be tested across restarts.
 
+Release builds hide these buttons. To keep them in a release build, such as one for TestFlight, build with `--dart-define=TEST_TOOLS=true`:
+
+```
+flutter build ipa --release --dart-define=TEST_TOOLS=true
+```
+
+The flag lives in `lib/build_flags.dart`. Leave it off for store builds.
+
 ## Project layout
 
 ```
