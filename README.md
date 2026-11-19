@@ -43,6 +43,16 @@ flutter build ipa --release --dart-define=TEST_TOOLS=true
 
 The flag lives in `lib/build_flags.dart`. Leave it off for store builds.
 
+### iOS
+
+iOS builds need a Mac, so they run on GitHub Actions. The `iOS` workflow (`.github/workflows/ios.yml`) builds the app with the test buttons on, signs it and uploads it to TestFlight. Start it from the Actions tab or with:
+
+```
+gh workflow run ios.yml
+```
+
+It needs these repo secrets: `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`, `APP_STORE_CONNECT_PRIVATE_KEY` (the `.p8` App Store Connect API key) and `CERTIFICATE_PRIVATE_KEY` (the RSA key the distribution certificate is made from).
+
 ## Project layout
 
 ```
