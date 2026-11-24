@@ -1,0 +1,42 @@
+name: TestFlight testers
+
+# Checks the TestFlight side of the app in App Store Connect: the latest
+# builds, the beta groups and their testers. With "fix" on, it also makes sure
+# an internal group has the latest build and that the account holder is a
+# tester in it, and sends the invitation again if it was never accepted.
+# Start it from the Actions tab or with `gh workflow run testflight-testers.yml`.
+#
+# The repo is public, so the script masks emails in the log. To invite someone
+# other than the account holder, set the TESTER_EMAIL secret.
+on:
+  workflow_dispatch:
+    inputs:
+      fix:
+        description: Fix what keeps builds from reaching testers (off = only report)
+        type: boolean
+        default: true
+
+env:
+  BUNDLE_ID: com.onemillionsteps.oneMillionSteps
+
+jobs:
+  testers:
+    name: Check and fix TestFlight testers
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - run: pip install "PyJWT[crypto]==2.10.1" requests==2.32.3
+
+      - name: Check and fix
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          TESTER_EMAIL: ${{ secrets.TESTER_EMAIL }}
+        run: python .github/scripts/testflight_testers.py ${{ inputs.fix && '--fix' || '' }}

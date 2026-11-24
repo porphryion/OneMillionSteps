@@ -53,6 +53,14 @@ gh workflow run ios.yml
 
 It needs these repo secrets: `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`, `APP_STORE_CONNECT_PRIVATE_KEY` (the `.p8` App Store Connect API key) and `CERTIFICATE_PRIVATE_KEY` (the RSA key the distribution certificate is made from).
 
+An uploaded build only reaches a phone once it is in a TestFlight group with testers. The `TestFlight testers` workflow (`.github/workflows/testflight-testers.yml`) prints the builds, groups and testers. It also makes sure an internal group has the latest build, adds the account holder as a tester and sends the invitation again if it was never accepted:
+
+```
+gh workflow run testflight-testers.yml
+```
+
+Set the optional `TESTER_EMAIL` secret to invite another App Store Connect user instead of the account holder.
+
 ## Project layout
 
 ```
