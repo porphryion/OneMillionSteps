@@ -23,13 +23,17 @@ class HomeShell extends StatefulWidget {
     required this.game,
     this.fakeSteps,
     this.debugClock,
+    this.healthSteps = false,
   });
 
   final GameController game;
 
-  /// Present only while real step data is not wired up.
+  /// Present only when steps are fake (test buttons).
   final FakeStepSource? fakeSteps;
   final DebugClock? debugClock;
+
+  /// Steps come from Apple Health.
+  final bool healthSteps;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -99,6 +103,7 @@ class _HomeShellState extends State<HomeShell> {
         children: [
           RaceScreen(
             game: game,
+            healthSteps: widget.healthSteps,
             onSync: _sync,
             onBrowse: () => _goTo(1),
             onShop: () => _goTo(2),

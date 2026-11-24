@@ -30,6 +30,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Yarışlarda ilerlemen için adım sayın Sağlık uygulamasından okunur. Elle girilen adımlar sayılmaz.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>1 Million Steps Sağlık uygulamasına veri yazmaz, yalnızca adım sayını okur.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

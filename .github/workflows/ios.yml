@@ -17,8 +17,8 @@ name: iOS
 # distribution certificate is made from CERTIFICATE_PRIVATE_KEY, so every run
 # reuses the same certificate instead of creating a new one.
 #
-# The build keeps the test buttons on (TEST_TOOLS=true) until real step data
-# is wired up.
+# Steps come from Apple Health. With fake_steps on, the build uses fake steps
+# and shows the test buttons instead (FAKE_STEPS and TEST_TOOLS).
 on:
   workflow_dispatch:
     inputs:
@@ -29,6 +29,10 @@ on:
           - testflight
           - adhoc
         default: testflight
+      fake_steps:
+        description: Fake steps and test buttons instead of Apple Health
+        type: boolean
+        default: false
 
 env:
   BUNDLE_ID: com.onemillionsteps.oneMillionSteps
@@ -60,9 +64,6 @@ jobs:
       - run: flutter pub get
       - run: flutter test
 
-      # A profile keeps the devices it was made with, so the old Ad Hoc
-      # profiles are deleted and fetch-signing-files makes a new one with
-      # every registered iPhone.
       - name: Register the Ad Hoc iPhones
         if: inputs.distribution == 'adhoc'
         env:
@@ -78,7 +79,17 @@ jobs:
           # Unquoted on purpose: one argument per UDID.
           app-store-connect devices register --name "Ad Hoc iPhone" \
             --udid $ADHOC_DEVICE_UDIDS --ignore-registration-errors
-          python .github/scripts/delete_adhoc_profiles.py
+
+      # Turns on HealthKit for the bundle ID and deletes profiles that would
+      # miss it or miss an iPhone, so fetch-signing-files makes fresh ones.
+      - name: Prepare the bundle ID and profiles
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: >-
+          python .github/scripts/prepare_signing.py
+          ${{ inputs.distribution == 'adhoc' && '--adhoc' || '' }}
 
       - name: Set up code signing
         env:
@@ -99,7 +110,7 @@ jobs:
           flutter build ipa --release \
             --build-number=${{ github.run_number }} \
             --export-options-plist="$HOME/export_options.plist" \
-            --dart-define=TEST_TOOLS=true
+            ${{ inputs.fake_steps && '--dart-define=FAKE_STEPS=true --dart-define=TEST_TOOLS=true' || '' }}
 
       - name: Upload to TestFlight
         if: inputs.distribution != 'adhoc'

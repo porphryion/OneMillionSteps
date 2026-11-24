@@ -12,14 +12,14 @@ Built with Flutter. Targets Android and iOS, with Turkish UI. Windows desktop is
 - **Medals.** Finish fast for gold, a bit slower for silver, or before the race closes for bronze. Medal targets are set by distance (gold expects about 15,000 steps a day, silver about 10,000).
 - **Coins.** 20 coins per km for gold, 75% of that for silver, 50% for bronze. New players start with 400.
 - **Gear.** Shoes and tracksuit sets give percentage bonuses for weather (sunny, hot, rainy, windy, cold) or terrain (asphalt, trail, cobblestone, sand, mountain), and some give a bonus on every course. Bonuses from the two slots add up.
-- **Fair steps.** At most 50,000 steps count per day.
+- **Fair steps.** Steps count from the first launch, steps typed in by hand do not count, and at most 50,000 count per day.
 
 ## Status
 
-Early development. Single player. Steps come from a debug button for now.
+Early development. Single player. On iOS, steps come from Apple Health. Android and Windows still use the debug buttons until Health Connect is wired up.
 
 **Next**
-- Real steps from Health Connect (Android) and Apple Health (iOS)
+- Real steps from Health Connect (Android)
 - Multiplayer: leaderboards per race
 - More gear slots, streaks, reminders
 
@@ -33,15 +33,17 @@ flutter run -d windows     # or pick an Android emulator / device
 flutter test
 ```
 
-In debug builds, the race tab has two buttons: **+5.000 adım (debug)** simulates walking and **Ertesi gün (debug)** moves the game clock one day ahead. Use the second one to get past the 50,000-steps-a-day cap or to test multi-day races (medal tiers, the weekly close). Debug steps and the day offset are saved, so a race can be tested across restarts.
+With fake steps, the race tab has two buttons in debug builds: **+5.000 adım (debug)** simulates walking and **Ertesi gün (debug)** moves the game clock one day ahead. Use the second one to get past the 50,000-steps-a-day cap or to test multi-day races (medal tiers, the weekly close). Debug steps and the day offset are saved, so a race can be tested across restarts.
 
-Release builds hide these buttons. To keep them in a release build, such as one for TestFlight, build with `--dart-define=TEST_TOOLS=true`:
+Fake steps are used on Android and Windows. iOS reads real steps from Apple Health and has no test buttons. Its game is saved apart from the fake-steps game, so test progress never mixes with real progress.
+
+Release builds hide the buttons. To keep them in a release build, build with `--dart-define=TEST_TOOLS=true`. To use fake steps on iOS, add `--dart-define=FAKE_STEPS=true`:
 
 ```
-flutter build ipa --release --dart-define=TEST_TOOLS=true
+flutter build ipa --release --dart-define=FAKE_STEPS=true --dart-define=TEST_TOOLS=true
 ```
 
-The flag lives in `lib/build_flags.dart`. Leave it off for store builds.
+The flags live in `lib/build_flags.dart`. Leave them off for store builds.
 
 ### iOS
 
@@ -52,6 +54,8 @@ gh workflow run ios.yml
 ```
 
 It needs these repo secrets: `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`, `APP_STORE_CONNECT_PRIVATE_KEY` (the `.p8` App Store Connect API key) and `CERTIFICATE_PRIVATE_KEY` (the RSA key the distribution certificate is made from).
+
+The build reads steps from Apple Health, so the workflow turns on the HealthKit capability for the bundle ID and makes fresh profiles when needed (`.github/scripts/prepare_signing.py`). For a build with fake steps and the test buttons, add `-f fake_steps=true`.
 
 To install without TestFlight, make an Ad Hoc build instead. It runs only on the iPhones registered in the developer account:
 
@@ -83,7 +87,8 @@ design-system/
 lib/
   game/       rules and state: balance (config.dart), courses and gear (catalog.dart),
               weekly schedule, formulas, controller, save
-  steps/      step sources (fake for now, health data next)
+  steps/      step sources: Apple Health on iOS (native side in
+              ios/Runner/AppDelegate.swift), fake steps elsewhere
   ui/
     theme/    design tokens and ThemeData
     widgets/  shared components (clay cards and buttons, mascot, course banner,

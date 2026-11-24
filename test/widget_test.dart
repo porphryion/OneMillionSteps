@@ -135,4 +135,34 @@ void main() {
 
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('with Health steps, says where steps come from until they do', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 3200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final steps = FakeStepSource(clock: now);
+    final game = GameController(
+      store: MemoryGameStore(),
+      steps: steps,
+      clock: now,
+    );
+    await tester.runAsync(game.load);
+    await tester.pumpWidget(OneMillionStepsApp(game: game, healthSteps: true));
+    await tester.pump();
+
+    expect(find.textContaining('Sağlık uygulamasından gelir'), findsOneWidget);
+    // Health builds have no test buttons.
+    expect(find.text('+5.000 adım (debug)'), findsNothing);
+
+    steps.addSteps(1200);
+    await tester.runAsync(game.syncSteps);
+    await tester.pump();
+    expect(find.textContaining('Sağlık uygulamasından gelir'), findsNothing);
+    expect(find.text('1.200'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
 }

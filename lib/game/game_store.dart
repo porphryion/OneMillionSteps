@@ -11,21 +11,28 @@ abstract class GameStore {
 }
 
 class PrefsGameStore implements GameStore {
-  PrefsGameStore(this._prefs);
+  PrefsGameStore(this._prefs, {this.key = fakeStepsKey});
 
-  static const _key = 'game_state';
+  /// Saves played with fake steps (test buttons).
+  static const fakeStepsKey = 'game_state';
+
+  /// Saves played with real steps from Apple Health. Kept apart so test
+  /// progress never mixes with real progress.
+  static const healthStepsKey = 'game_state_health';
+
   final SharedPreferences _prefs;
+  final String key;
 
   @override
   Future<GameState?> load() async {
-    final raw = _prefs.getString(_key);
+    final raw = _prefs.getString(key);
     if (raw == null) return null;
     return GameState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 
   @override
   Future<void> save(GameState state) =>
-      _prefs.setString(_key, jsonEncode(state.toJson()));
+      _prefs.setString(key, jsonEncode(state.toJson()));
 }
 
 class MemoryGameStore implements GameStore {

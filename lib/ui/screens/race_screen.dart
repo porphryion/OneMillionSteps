@@ -22,9 +22,13 @@ class RaceScreen extends StatelessWidget {
     required this.onSync,
     required this.onBrowse,
     required this.onShop,
+    this.healthSteps = false,
   });
 
   final GameController game;
+
+  /// Steps come from Apple Health.
+  final bool healthSteps;
   final Future<void> Function() onSync;
   final VoidCallback onBrowse;
   final VoidCallback onShop;
@@ -57,6 +61,9 @@ class RaceScreen extends StatelessWidget {
                   steps: game.todaySteps,
                   date: game.now,
                   capped: game.dailyCapReached,
+                  // Until the first real steps arrive, say where they come
+                  // from and how to allow it.
+                  healthHint: healthSteps && game.state.lifetimeSteps == 0,
                 ),
                 if (course == null)
                   _emptyState()
@@ -303,11 +310,13 @@ class _TodayStrip extends StatelessWidget {
     required this.steps,
     required this.date,
     required this.capped,
+    this.healthHint = false,
   });
 
   final int steps;
   final DateTime date;
   final bool capped;
+  final bool healthHint;
 
   @override
   Widget build(BuildContext context) {
@@ -344,40 +353,67 @@ class _TodayStrip extends StatelessWidget {
             ),
             if (capped) ...[
               const SizedBox(height: AppSpace.s8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s12,
-                  vertical: AppSpace.s8,
-                ),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Row(
-                  children: [
-                    ExcludeSemantics(
-                      child: Icon(
-                        Icons.bedtime_rounded,
-                        size: AppIconSize.sm,
-                        color: GameColors.of(context).primaryText,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpace.s8),
-                    Expanded(
-                      child: Text(
-                        'Günlük ${groupThousands(Tuning.dailyStepCap)} adım '
-                        'sınırı doldu. Yeni adımların yarın sayılır.',
-                        style: t.labelMedium?.copyWith(
-                          color: cs.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _StripNote(
+                icon: Icons.bedtime_rounded,
+                text:
+                    'Günlük ${groupThousands(Tuning.dailyStepCap)} adım '
+                    'sınırı doldu. Yeni adımların yarın sayılır.',
+              ),
+            ],
+            if (healthHint) ...[
+              const SizedBox(height: AppSpace.s8),
+              const _StripNote(
+                icon: Icons.favorite_rounded,
+                text:
+                    'Adımların Sağlık uygulamasından gelir. Oyunu ilk '
+                    'açtığın andan sonra attığın adımlar sayılır. Adım '
+                    "görünmüyorsa Sağlık'ta bu oyuna adım okuma izni ver.",
               ),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A soft orange note under today's steps.
+class _StripNote extends StatelessWidget {
+  const _StripNote({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s12,
+        vertical: AppSpace.s8,
+      ),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          ExcludeSemantics(
+            child: Icon(
+              icon,
+              size: AppIconSize.sm,
+              color: GameColors.of(context).primaryText,
+            ),
+          ),
+          const SizedBox(width: AppSpace.s8),
+          Expanded(
+            child: Text(
+              text,
+              style: t.labelMedium?.copyWith(color: cs.onPrimaryContainer),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -10,8 +10,9 @@ information that external testing needs. With --fix it also makes sure that:
 
 With --public-link it sets up external testing with a public link:
 
-- fills in the beta app description, feedback email, review contact and
-  "What to Test" where they are empty,
+- sets the beta app description and review notes to the texts below,
+- fills in the feedback email, review contact and "What to Test" where they
+  are empty,
 - creates the external group "Public" and adds the latest build to it,
 - submits the build for beta app review,
 - turns on the group's public link.
@@ -47,25 +48,27 @@ EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 # Testers see these two in the TestFlight app, so they are in Turkish (the
 # app's primary locale) and follow the glossary in design-system/MASTER.md.
 BETA_DESCRIPTION = (
-    "1 Million Steps bir yürüyüş oyunu. Günlük adımların seni önce hazırlık "
-    "kademelerinden, sonra Türkiye'nin dört bir yanındaki haftalık "
-    "maratonlardan geçirir. Bitirdiğin yarışlar madalya ve coin kazandırır; "
-    "coin ile hava ve zemine uygun ayakkabı ve eşofman takımı alırsın. Bu "
-    "beta sürümünde adımlar gerçek değil: Yarış sekmesindeki test düğmeleriyle "
-    "adım ekleyip ertesi güne geçebilirsin."
+    "1 Million Steps bir yürüyüş oyunu. Sağlık uygulamasındaki adımların seni "
+    "önce hazırlık kademelerinden, sonra Türkiye'nin dört bir yanındaki "
+    "haftalık maratonlardan geçirir. Bitirdiğin yarışlar madalya ve coin "
+    "kazandırır; coin ile hava ve zemine uygun ayakkabı ve eşofman takımı "
+    "alırsın. Adımlar oyunu ilk açtığın andan sonra sayılır, elle girilen "
+    "adımlar sayılmaz."
 )
 WHATS_NEW = (
-    "İlk beta sürümü. Adımlar şimdilik gerçek değil. Yarış sekmesinde "
-    "\"+5.000 adım\" ile adım ekle, \"Ertesi gün\" ile günü ilerlet; "
-    "hazırlık kademelerini, maratonları ve mağazayı dene."
+    "Adımlar artık Sağlık uygulamasından geliyor. İlk açılışta adım okuma "
+    "iznini ver, sonra yürü: oyunu açtığın andan sonra attığın adımlar "
+    "yarışını ilerletir."
 )
 # Apple's reviewers read this one, so it is in English.
 REVIEW_NOTES = (
-    "No account or sign-in is needed. The app does not read health data yet "
-    "and has no network features; steps are simulated. On the race tab, the "
-    "floating test buttons (\"+5.000 adım\" and \"Ertesi gün\") add 5,000 "
-    "steps or jump to the next day, so every screen can be reached without "
-    "walking. The interface is in Turkish."
+    "No account or sign-in is needed. The app reads the step count from Apple "
+    "Health (read only, it writes nothing) and turns steps into progress on "
+    "virtual race courses. Steps typed in by hand in Health do not count, and "
+    "steps count from the first launch, so progress shows after walking with "
+    "the device: the first training walk (Park Yürüyüşü, 2 km) takes about "
+    "2,700 steps. Health data stays on the device; the app has no network "
+    "features. The interface is in Turkish."
 )
 
 
@@ -424,7 +427,7 @@ def set_up_public_link(api, app, builds, groups, info, email, first_name, last_n
         )
     else:
         wanted = {}
-        if not loc["attributes"].get("description"):
+        if loc["attributes"].get("description") != BETA_DESCRIPTION:
             wanted["description"] = BETA_DESCRIPTION
         if not loc["attributes"].get("feedbackEmail"):
             wanted["feedbackEmail"] = email
@@ -446,7 +449,7 @@ def set_up_public_link(api, app, builds, groups, info, email, first_name, last_n
         wanted["contactPhone"] = phone
     if d.get("demoAccountRequired") is None:
         wanted["demoAccountRequired"] = False
-    if not d.get("notes"):
+    if d.get("notes") != REVIEW_NOTES:
         wanted["notes"] = REVIEW_NOTES
     if wanted:
         print(f"Filling in the review information: {', '.join(wanted)}.")
