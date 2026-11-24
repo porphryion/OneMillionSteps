@@ -100,7 +100,20 @@ class ApiError(Exception):
             errors = response.json().get("errors", [])
         except ValueError:
             errors = []
-        details = "; ".join(e.get("detail") or e.get("title") or "" for e in errors)
+        # The detail can be as vague as "Please try again later", so keep the
+        # error code and any associated errors, which name the real cause.
+        details = "; ".join(
+            " ".join(
+                part
+                for part in (
+                    e.get("code"),
+                    e.get("detail") or e.get("title"),
+                    str(e.get("meta", {}).get("associatedErrors", "")) or None,
+                )
+                if part
+            )
+            for e in errors
+        )
         super().__init__(scrub(f"HTTP {self.status}: {details or response.text[:300]}"))
 
 
