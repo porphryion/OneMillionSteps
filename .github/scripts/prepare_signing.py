@@ -35,7 +35,8 @@ def enable_capabilities(api, bundle_id):
     """Returns True when a capability was turned on now."""
     enabled = {
         c["attributes"].get("capabilityType")
-        for c in api.get(f"/bundleIds/{bundle_id}/bundleIdCapabilities", limit=200)["data"]
+        # This relationship does not take a limit.
+        for c in api.get(f"/bundleIds/{bundle_id}/bundleIdCapabilities")["data"]
     }
     changed = False
     for capability in CAPABILITIES:
