@@ -32,8 +32,6 @@ on:
 
 env:
   BUNDLE_ID: com.onemillionsteps.oneMillionSteps
-  # Codemagic names the profiles it makes "<bundle ID name> <type> <time>".
-  ADHOC_PROFILE_PREFIX: One Million Steps ios_app_adhoc
 
 jobs:
   build:
@@ -80,10 +78,7 @@ jobs:
           # Unquoted on purpose: one argument per UDID.
           app-store-connect devices register --name "Ad Hoc iPhone" \
             --udid $ADHOC_DEVICE_UDIDS --ignore-registration-errors
-          app-store-connect list-profiles --type IOS_APP_ADHOC --state ACTIVE --json \
-            | jq -r --arg prefix "$ADHOC_PROFILE_PREFIX" \
-                '.[] | select(.attributes.name | startswith($prefix)) | .id' \
-            | while read -r id; do app-store-connect profiles delete "$id"; done
+          python .github/scripts/delete_adhoc_profiles.py
 
       - name: Set up code signing
         env:
