@@ -1,7 +1,17 @@
 name: iOS
 
-# Builds the iOS app on a GitHub-hosted Mac, signs it and uploads it to
-# TestFlight. Start it from the Actions tab or with `gh workflow run ios.yml`.
+# Builds the iOS app on a GitHub-hosted Mac and signs it. Start it from the
+# Actions tab or with:
+#
+#   gh workflow run ios.yml                       # TestFlight
+#   gh workflow run ios.yml -f distribution=adhoc # Ad Hoc install page
+#
+# - testflight: an App Store build, uploaded to TestFlight.
+# - adhoc: an Ad Hoc build that runs only on the iPhones in the
+#   ADHOC_DEVICE_UDIDS secret (space-separated UDIDs). It is published with an
+#   install page on GitHub Pages at <pages url>/<ADHOC_PAGE_TOKEN>/. Open that
+#   page in Safari on the iPhone and tap Yükle. The token is a secret, so the
+#   page is unlisted.
 #
 # Signing uses the App Store Connect API key in the repo secrets. The
 # distribution certificate is made from CERTIFICATE_PRIVATE_KEY, so every run
@@ -11,15 +21,27 @@ name: iOS
 # is wired up.
 on:
   workflow_dispatch:
+    inputs:
+      distribution:
+        description: Where the build goes
+        type: choice
+        options:
+          - testflight
+          - adhoc
+        default: testflight
 
 env:
   BUNDLE_ID: com.onemillionsteps.oneMillionSteps
+  # Codemagic names the profiles it makes "<bundle ID name> <type> <time>".
+  ADHOC_PROFILE_PREFIX: One Million Steps ios_app_adhoc
 
 jobs:
-  testflight:
-    name: Build and upload to TestFlight
+  build:
+    name: Build and sign (${{ inputs.distribution }})
     runs-on: macos-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -40,19 +62,43 @@ jobs:
       - run: flutter pub get
       - run: flutter test
 
+      # A profile keeps the devices it was made with, so the old Ad Hoc
+      # profiles are deleted and fetch-signing-files makes a new one with
+      # every registered iPhone.
+      - name: Register the Ad Hoc iPhones
+        if: inputs.distribution == 'adhoc'
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          ADHOC_DEVICE_UDIDS: ${{ secrets.ADHOC_DEVICE_UDIDS }}
+        run: |
+          if [ -z "$ADHOC_DEVICE_UDIDS" ]; then
+            echo "Set the ADHOC_DEVICE_UDIDS secret to the iPhone UDIDs." >&2
+            exit 1
+          fi
+          # Unquoted on purpose: one argument per UDID.
+          app-store-connect devices register --name "Ad Hoc iPhone" \
+            --udid $ADHOC_DEVICE_UDIDS --ignore-registration-errors
+          app-store-connect list-profiles --type IOS_APP_ADHOC --state ACTIVE --json \
+            | jq -r --arg prefix "$ADHOC_PROFILE_PREFIX" \
+                '.[] | select(.attributes.name | startswith($prefix)) | .id' \
+            | while read -r id; do app-store-connect profiles delete "$id"; done
+
       - name: Set up code signing
         env:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+          PROFILE_TYPE: ${{ inputs.distribution == 'adhoc' && 'IOS_APP_ADHOC' || 'IOS_APP_STORE' }}
         run: |
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type "$PROFILE_TYPE" --create
           keychain add-certificates
           xcode-project use-profiles
 
-      # The run number is the build number, so every upload gets a new one.
+      # The run number is the build number, so every build gets a new one.
       - name: Build the IPA
         run: |
           flutter build ipa --release \
@@ -61,8 +107,44 @@ jobs:
             --dart-define=TEST_TOOLS=true
 
       - name: Upload to TestFlight
+        if: inputs.distribution != 'adhoc'
         env:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: app-store-connect publish --path "build/ios/ipa/*.ipa"
+
+      - name: Make the install page
+        if: inputs.distribution == 'adhoc'
+        env:
+          ADHOC_PAGE_TOKEN: ${{ secrets.ADHOC_PAGE_TOKEN }}
+          PAGES_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          if [ -z "$ADHOC_PAGE_TOKEN" ]; then
+            echo "Set the ADHOC_PAGE_TOKEN secret to a random string." >&2
+            exit 1
+          fi
+          version=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+          python .github/scripts/adhoc_page.py build/ios/ipa/*.ipa site \
+            "$PAGES_URL" "$ADHOC_PAGE_TOKEN" "$version" "${{ github.run_number }}"
+
+      - name: Upload the install page
+        if: inputs.distribution == 'adhoc'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+          retention-days: 1
+
+  pages:
+    name: Publish the install page
+    needs: build
+    if: inputs.distribution == 'adhoc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/deploy-pages@v5
