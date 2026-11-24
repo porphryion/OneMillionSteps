@@ -44,23 +44,28 @@ PUBLIC_GROUP_NAME = "Public"
 ACCEPTED_STATES = {"ACCEPTED", "INSTALLED"}
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 
+# Testers see these two in the TestFlight app, so they are in Turkish (the
+# app's primary locale) and follow the glossary in design-system/MASTER.md.
 BETA_DESCRIPTION = (
-    "1 Million Steps is a walking game. Your daily steps move your runner "
-    "through weekly marathons in cities across Turkey, and finished races "
-    "earn medals and coins for training and gear. This beta uses simulated "
-    "steps: the test buttons on the race tab add 5,000 steps or jump to the "
-    "next day."
+    "1 Million Steps bir yürüyüş oyunu. Günlük adımların seni önce hazırlık "
+    "kademelerinden, sonra Türkiye'nin dört bir yanındaki haftalık "
+    "maratonlardan geçirir. Bitirdiğin yarışlar madalya ve coin kazandırır; "
+    "coin ile hava ve zemine uygun ayakkabı ve eşofman takımı alırsın. Bu "
+    "beta sürümünde adımlar gerçek değil: Yarış sekmesindeki test düğmeleriyle "
+    "adım ekleyip ertesi güne geçebilirsin."
 )
 WHATS_NEW = (
-    "First beta. Steps are simulated for now. On the race tab, use the test "
-    "buttons to add 5,000 steps or jump to the next day, then try races, "
-    "training and gear."
+    "İlk beta sürümü. Adımlar şimdilik gerçek değil. Yarış sekmesinde "
+    "\"+5.000 adım\" ile adım ekle, \"Ertesi gün\" ile günü ilerlet; "
+    "hazırlık kademelerini, maratonları ve mağazayı dene."
 )
+# Apple's reviewers read this one, so it is in English.
 REVIEW_NOTES = (
     "No account or sign-in is needed. The app does not read health data yet "
     "and has no network features; steps are simulated. On the race tab, the "
-    "floating test buttons add 5,000 steps or jump to the next day, so every "
-    "screen can be reached without walking. The interface is in Turkish."
+    "floating test buttons (\"+5.000 adım\" and \"Ertesi gün\") add 5,000 "
+    "steps or jump to the next day, so every screen can be reached without "
+    "walking. The interface is in Turkish."
 )
 
 
