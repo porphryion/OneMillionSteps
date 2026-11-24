@@ -61,6 +61,12 @@ gh workflow run testflight-testers.yml
 
 Set the optional `TESTER_EMAIL` secret to invite another App Store Connect user instead of the account holder.
 
+For a public TestFlight link that needs no invitation email, run it with `public_link`. It fills in the test information, adds the latest build to the external `Public` group, submits it for beta app review and turns on the link. Run it again once Apple approves the build if the link could not be turned on yet. It needs the `REVIEW_CONTACT_PHONE` secret (the contact phone for beta app review, with the country code). The log masks the link, so copy it from App Store Connect:
+
+```
+gh workflow run testflight-testers.yml -f fix=false -f public_link=true
+```
+
 ## Project layout
 
 ```

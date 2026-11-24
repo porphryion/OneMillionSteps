@@ -1,20 +1,34 @@
 name: TestFlight testers
 
 # Checks the TestFlight side of the app in App Store Connect: the latest
-# builds, the beta groups and their testers. With "fix" on, it also makes sure
-# an internal group has the latest build and that the account holder is a
-# tester in it, and sends the invitation again if it was never accepted.
-# Start it from the Actions tab or with `gh workflow run testflight-testers.yml`.
+# builds, the beta groups and their testers, and the test information.
 #
-# The repo is public, so the script masks emails in the log. To invite someone
-# other than the account holder, set the TESTER_EMAIL secret.
+# - "fix" makes sure an internal group has the latest build and that the
+#   account holder is a tester in it, and sends the invitation again if it was
+#   never accepted.
+# - "public_link" sets up external testing: fills in the test information,
+#   adds the latest build to the "Public" group, submits it for beta app
+#   review and turns on the public link. Run it again after Apple approves the
+#   build if the link could not be turned on yet.
+#
+# Start it from the Actions tab or with
+# `gh workflow run testflight-testers.yml -f public_link=true`.
+#
+# The repo is public, so the script masks emails, the phone number and the
+# public link in the log. Optional secrets: TESTER_EMAIL (invite someone other
+# than the account holder) and REVIEW_CONTACT_PHONE (the contact phone for beta
+# app review, with the country code).
 on:
   workflow_dispatch:
     inputs:
       fix:
-        description: Fix what keeps builds from reaching testers (off = only report)
+        description: Fix what keeps builds from reaching internal testers
         type: boolean
         default: true
+      public_link:
+        description: Set up external testing with a public link
+        type: boolean
+        default: false
 
 env:
   BUNDLE_ID: com.onemillionsteps.oneMillionSteps
@@ -39,4 +53,8 @@ jobs:
           APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           TESTER_EMAIL: ${{ secrets.TESTER_EMAIL }}
-        run: python .github/scripts/testflight_testers.py ${{ inputs.fix && '--fix' || '' }}
+          REVIEW_CONTACT_PHONE: ${{ secrets.REVIEW_CONTACT_PHONE }}
+        run: >-
+          python .github/scripts/testflight_testers.py
+          ${{ inputs.fix && '--fix' || '' }}
+          ${{ inputs.public_link && '--public-link' || '' }}
